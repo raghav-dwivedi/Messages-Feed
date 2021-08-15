@@ -59,7 +59,7 @@ exports.createPost = async (req, res, next) => {
 			},
 		});
 		res.status(201).json({
-			message: 'Post created successfully',
+			message: 'Post created successfully.',
 			post: post,
 			creator: { _id: user._id, name: user.name },
 		});
