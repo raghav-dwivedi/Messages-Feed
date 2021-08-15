@@ -14,10 +14,22 @@ router.get('/posts', isAuth, feedController.getPosts);
 router.post(
 	'/post',
 	[
-		body('title').trim().isLength({
+		body('title', 'Title length invalid').trim().isLength({
 			min: 5,
 		}),
-		body('content').trim().isLength({
+		body('image').custom((value, { req }) => {
+			if (req.file.size > 2 * 1024 * 1024) {
+				clearImage({
+					Bucket: 'messages-feed',
+					Key: req.imageUrl,
+				});
+				const error = new Error('Image size must be under 2 MB');
+				error.statusCode = 413;
+				throw error;
+			}
+			return true;
+		}),
+		body('content', 'Content length invalid').trim().isLength({
 			min: 5,
 		}),
 	],
@@ -33,6 +45,18 @@ router.put(
 		body('title').trim().isLength({
 			min: 5,
 		}),
+		body('image').custom((value, { req }) => {
+			if (req.file.size > 2 * 1024 * 1024) {
+				clearImage({
+					Bucket: 'messages-feed',
+					Key: req.imageUrl,
+				});
+				const error = new Error('Image size must be under 2 MB');
+				error.statusCode = 413;
+				throw error;
+			}
+			return true;
+		}),
 		body('content').trim().isLength({
 			min: 5,
 		}),
@@ -42,5 +66,12 @@ router.put(
 );
 
 router.delete('/post/:postId', isAuth, feedController.deletePost);
+
+const clearImage = (params) => {
+	console.log('Deleting image');
+	s3.deleteObject(params, (err, data) => {
+		if (err) throw err;
+	});
+};
 
 module.exports = router;

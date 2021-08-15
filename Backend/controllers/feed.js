@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+const aws = require('aws-sdk');
 
+const s3 = new aws.S3();
 const { validationResult } = require('express-validator');
 
 const io = require('../socket');
@@ -31,22 +33,20 @@ exports.getPosts = async (req, res, next) => {
 };
 
 exports.createPost = async (req, res, next) => {
-	const errors = validationResult(req);
-	if (!errors.isEmpty()) {
-		const error = new Error('Validation failed, entered data is incorrect');
-		error.statusCode = 422;
-		throw error;
-	}
-	const imageUrl = req.file.path.replace('\\', '/');
-	const title = req.body.title;
-	const content = req.body.content;
-	const post = new Post({
-		title: title,
-		content: content,
-		imageUrl: imageUrl,
-		creator: req.userId,
-	});
 	try {
+		const errors = validationResult(req);
+		if (!errors.isEmpty()) {
+			throw new Error(errors.array()[0].msg);
+		}
+		const imageUrl = '/' + req.imageUrl;
+		const title = req.body.title;
+		const content = req.body.content;
+		const post = new Post({
+			title: title,
+			content: content,
+			imageUrl: imageUrl,
+			creator: req.userId,
+		});
 		await post.save();
 		const user = await User.findById(req.userId);
 		user.posts.push(post);
@@ -93,25 +93,27 @@ exports.getPost = async (req, res, next) => {
 };
 
 exports.updatePost = async (req, res, next) => {
-	const postId = req.params.postId;
-	const errors = validationResult(req);
-	if (!errors.isEmpty()) {
-		const error = new Error('Validation failed, entered data is incorrect');
-		error.statusCode = 422;
-		throw error;
-	}
-	const title = req.body.title;
-	const content = req.body.content;
-	let imageUrl = req.body.image;
-	if (req.file) {
-		imageUrl = req.file.path.replace('\\', '/');
-	}
-	if (!imageUrl) {
-		const error = new Error('No image picked');
-		error.statusCode = 404;
-		throw error;
-	}
 	try {
+		const postId = req.params.postId;
+		const errors = validationResult(req);
+		if (!errors.isEmpty()) {
+			const error = new Error(
+				'Validation failed, entered data is incorrect'
+			);
+			error.statusCode = 422;
+			throw error;
+		}
+		const title = req.body.title;
+		const content = req.body.content;
+		let imageUrl = req.body.image;
+		if (req.file) {
+			imageUrl = '/' + req.imageUrl;
+		}
+		if (!imageUrl) {
+			const error = new Error('No image picked');
+			error.statusCode = 404;
+			throw error;
+		}
 		const post = await Post.findById(postId).populate('creator');
 		if (!post) {
 			const error = new Error('Could not find post.');
@@ -124,7 +126,10 @@ exports.updatePost = async (req, res, next) => {
 			throw error;
 		}
 		if (imageUrl !== post.imageUrl) {
-			clearImage(post.imageUrl);
+			clearImage({
+				Bucket: 'messages-feed',
+				Key: post.imageUrl.substr(1),
+			});
 		}
 		post.title = title;
 		post.imageUrl = imageUrl;
@@ -157,7 +162,10 @@ exports.deletePost = async (req, res, next) => {
 			error.statusCode = 403;
 			throw error;
 		}
-		clearImage(post.imageUrl);
+		clearImage({
+			Bucket: 'messages-feed',
+			Key: post.imageUrl.substr(1),
+		});
 		await Post.findByIdAndDelete(postId);
 		const user = await User.findById(req.userId);
 
@@ -177,7 +185,9 @@ exports.deletePost = async (req, res, next) => {
 	}
 };
 
-const clearImage = (filePath) => {
-	filePath = path.join(__dirname, '..', filePath);
-	fs.unlink(filePath, (err) => console.log(err));
+const clearImage = (params) => {
+	console.log('Deleting image');
+	s3.deleteObject(params, (err, data) => {
+		if (err) throw err;
+	});
 };

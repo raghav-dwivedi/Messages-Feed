@@ -2,26 +2,40 @@ const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 const multer = require('multer');
+const multerS3 = require('multer-s3');
+const AWS = require('aws-sdk');
+const s3Proxy = require('s3-proxy');
+const helmet = require('helmet');
+const compression = require('compression');
 
 const feedRoutes = require('./routes/feed');
 const authRoutes = require('./routes/auth');
 
 const app = express();
 
-const fileStorage = multer.diskStorage({
-	destination: function (req, file, cb) {
-		cb(null, 'images');
+s3 = new AWS.S3();
+
+const fileStorage = multerS3({
+	s3: s3,
+	bucket: 'messages-feed',
+	metadata: (req, file, cb) => {
+		cb(null, { fieldname: file.fieldname });
 	},
-	filename: function (req, file, cb) {
-		cb(null, Date.now() + '-' + file.originalname);
+	key: (req, file, cb) => {
+		req.imageUrl =
+			'images/' + Date.now() + '.' + file.mimetype.split('/')[1];
+		cb(null, req.imageUrl);
+	},
+	limits: {
+		fileSize: 2 * 1024 * 1024,
 	},
 });
 
 const fileFilter = (req, file, cb) => {
 	if (
-		file.mimetype === 'image/jpeg' ||
 		file.mimetype === 'image/png' ||
-		file.mimetype === 'image/jpg'
+		file.mimetype === 'image/jpg' ||
+		file.mimetype === 'image/jpeg'
 	) {
 		cb(null, true);
 	} else {
@@ -37,7 +51,9 @@ app.use(
 		fileFilter: fileFilter,
 	}).single('image')
 );
-app.use('/images', express.static(path.join(__dirname, 'images')));
+
+app.use(helmet());
+app.use(compression());
 
 app.use((req, res, next) => {
 	res.setHeader('Access-Control-Allow-Origin', '*');
@@ -51,6 +67,16 @@ app.use((req, res, next) => {
 	);
 	next();
 });
+
+app.get(
+	'/images/*',
+	s3Proxy({
+		bucket: 'messages-feed',
+		accessKeyId: `${process.env.AWS_ACCESS_KEY_ID}`,
+		secretAccessKey: `${process.env.AWS_SECRET_ACCESS_KEY}`,
+		overrideCacheControl: 'max-age=2592000',
+	})
+);
 
 app.use('/feed', feedRoutes);
 app.use('/auth', authRoutes);
@@ -68,7 +94,7 @@ app.use((error, req, res, next) => {
 
 mongoose
 	.connect(
-		'mongodb+srv://raghav:IqVmtHF4WEcDKkOJ@cluster0.bhzjg.mongodb.net/messages?retryWrites=true&w=majority',
+		`mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster0.bhzjg.mongodb.net/${process.env.MONGO_DEFAULT_DATABASE}?retryWrites=true&w=majority`,
 		{
 			useNewUrlParser: true,
 			useUnifiedTopology: true,
@@ -76,10 +102,6 @@ mongoose
 	)
 	.then((result) => {
 		const server = app.listen(8080);
-		console.log('Connected');
 		const io = require('./socket').init(server);
-		io.on('connection', (socket) => {
-			console.log('Client connected');
-		});
 	})
 	.catch((err) => console.log(err));

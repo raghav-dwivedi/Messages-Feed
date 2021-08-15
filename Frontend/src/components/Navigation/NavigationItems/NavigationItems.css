@@ -13,7 +13,7 @@
 }
 
 .navigation-item.mobile a {
-  color: #3b0062;
+  color: white;
 }
 
 .navigation-item a:hover,
@@ -33,6 +33,17 @@
   color: white;
   cursor: pointer;
   padding: 0;
+}
+
+.navigation-item.mobile button {
+  font: inherit;
+  background: transparent;
+  border: 2px solid white;
+  border-radius: 3px;
+  color: white;
+  cursor: pointer;
+  margin-top: 1rem;
+  padding: 3px 5px;
 }
 
 .navigation-item button:hover,

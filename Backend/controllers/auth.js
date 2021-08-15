@@ -57,7 +57,7 @@ exports.login = async (req, res, next) => {
 				email: loadedUser.email,
 				userId: loadedUser._id.toString(),
 			},
-			'enter a long secret string here',
+			`${process.env.JWTSecret}`,
 			{ expiresIn: '1h' }
 		);
 		res.status(200).json({
