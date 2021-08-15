@@ -101,7 +101,7 @@ mongoose
 		}
 	)
 	.then((result) => {
-		const server = app.listen(8080);
+		const server = app.listen(process.env.PORT || 8080);
 		const io = require('./socket').init(server);
 	})
 	.catch((err) => console.log(err));
