@@ -21,7 +21,7 @@ router.put(
 					}
 				});
 			})
-			.normalizeEmail(),
+			.normalizeEmail({ gmail_remove_dots: false }),
 
 		body('password').trim().isLength({ min: 5 }),
 		body('name').trim().not().isEmpty(),
