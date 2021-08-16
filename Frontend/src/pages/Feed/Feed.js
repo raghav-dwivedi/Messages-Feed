@@ -124,7 +124,7 @@ class Feed extends Component {
 
 	statusUpdateHandler = (event) => {
 		event.preventDefault();
-		fetch('https://messages-feed.herokuapp.com/auth/status', {
+		fetch('https://messages-feed.herokuapp.com/auth/status/update', {
 			method: 'PATCH',
 			headers: {
 				Authorization: 'Bearer ' + this.props.token,
