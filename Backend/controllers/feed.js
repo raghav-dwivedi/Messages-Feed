@@ -1,5 +1,3 @@
-const fs = require('fs');
-const path = require('path');
 const aws = require('aws-sdk');
 
 const s3 = new aws.S3();
@@ -188,6 +186,8 @@ exports.deletePost = async (req, res, next) => {
 const clearImage = (params) => {
 	console.log('Deleting image');
 	s3.deleteObject(params, (err, data) => {
-		if (err) throw err;
+		if (err) {
+			console.log('Error deleting image' + err);
+		}
 	});
 };

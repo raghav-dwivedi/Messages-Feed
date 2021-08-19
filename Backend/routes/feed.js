@@ -46,14 +46,17 @@ router.put(
 			min: 5,
 		}),
 		body('image').custom((value, { req }) => {
-			if (req.file.size > 2 * 1024 * 1024) {
-				clearImage({
-					Bucket: 'messages-feed',
-					Key: req.imageUrl,
-				});
-				const error = new Error('Image size must be under 2 MB');
-				error.statusCode = 413;
-				throw error;
+			if (req.file) {
+				if (req.file.size > 2 * 1024 * 1024) {
+					clearImage({
+						Bucket: 'messages-feed',
+						Key: req.imageUrl,
+					});
+					const error = new Error('Image size must be under 2 MB');
+					error.statusCode = 413;
+					throw error;
+				}
+				return true;
 			}
 			return true;
 		}),
@@ -70,7 +73,7 @@ router.delete('/post/:postId', isAuth, feedController.deletePost);
 const clearImage = (params) => {
 	console.log('Deleting image');
 	s3.deleteObject(params, (err, data) => {
-		if (err) throw err;
+		console.log('Error deleting image' + err);
 	});
 };
 
