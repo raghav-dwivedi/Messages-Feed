@@ -56,7 +56,7 @@ class Feed extends Component {
 		this.setState((prevState) => {
 			const updatedPosts = [...prevState.posts];
 			if (prevState.postPage === 1) {
-				if (prevState.posts.length >= 2) {
+				if (prevState.posts.length >= 4) {
 					updatedPosts.pop();
 				}
 				updatedPosts.unshift(post);
@@ -261,10 +261,7 @@ class Feed extends Component {
 	render() {
 		return (
 			<Fragment>
-				<ErrorHandler
-					error={this.state.error}
-					onHandle={this.errorHandler}
-				/>
+				<ErrorHandler error={this.state.error} onHandle={this.errorHandler} />
 				<FeedEdit
 					editing={this.state.isEditing}
 					selectedPost={this.state.editPost}
@@ -287,11 +284,7 @@ class Feed extends Component {
 					</form>
 				</section>
 				<section className="feed__control">
-					<Button
-						mode="raised"
-						design="accent"
-						onClick={this.newPostHandler}
-					>
+					<Button mode="raised" design="accent" onClick={this.newPostHandler}>
 						New Post
 					</Button>
 				</section>
@@ -301,15 +294,14 @@ class Feed extends Component {
 							<Loader />
 						</div>
 					)}
-					{this.state.posts.length <= 0 &&
-					!this.state.postsLoading ? (
+					{this.state.posts.length <= 0 && !this.state.postsLoading ? (
 						<p style={{ textAlign: 'center' }}>No posts found.</p>
 					) : null}
 					{!this.state.postsLoading && (
 						<Paginator
 							onPrevious={this.loadPosts.bind(this, 'previous')}
 							onNext={this.loadPosts.bind(this, 'next')}
-							lastPage={Math.ceil(this.state.totalPosts / 2)}
+							lastPage={Math.ceil(this.state.totalPosts / 4)}
 							currentPage={this.state.postPage}
 						>
 							{this.state.posts.map((post) => (
@@ -317,20 +309,12 @@ class Feed extends Component {
 									key={post._id}
 									id={post._id}
 									author={post.creator.name}
-									date={new Date(
-										post.createdAt
-									).toLocaleDateString('en-US')}
+									date={new Date(post.createdAt).toLocaleDateString('en-US')}
 									title={post.title}
 									image={post.imageUrl}
 									content={post.content}
-									onStartEdit={this.startEditPostHandler.bind(
-										this,
-										post._id
-									)}
-									onDelete={this.deletePostHandler.bind(
-										this,
-										post._id
-									)}
+									onStartEdit={this.startEditPostHandler.bind(this, post._id)}
+									onDelete={this.deletePostHandler.bind(this, post._id)}
 								/>
 							))}
 						</Paginator>

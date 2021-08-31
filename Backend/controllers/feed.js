@@ -9,7 +9,7 @@ const User = require('../models/user');
 
 exports.getPosts = async (req, res, next) => {
 	const currentPage = req.query.page || 1;
-	const perPage = 2;
+	const perPage = 4;
 	try {
 		const totalItems = await Post.find().countDocuments();
 		const posts = await Post.find()
@@ -95,9 +95,7 @@ exports.updatePost = async (req, res, next) => {
 		const postId = req.params.postId;
 		const errors = validationResult(req);
 		if (!errors.isEmpty()) {
-			const error = new Error(
-				'Validation failed, entered data is incorrect'
-			);
+			const error = new Error('Validation failed, entered data is incorrect');
 			error.statusCode = 422;
 			throw error;
 		}
